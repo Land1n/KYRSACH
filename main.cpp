@@ -92,60 +92,6 @@ void printField(std::vector<point> &path){
     }
 }
 
-std::vector<point> findRandomPath(){
-    std::vector<point> path;
-    point position_now = START_POSITION;
-    point last_position = {0,0};
-    while (position_now != END_POSITION)
-    {
-        int seed = std::rand()%4;
-        if (FIELD[position_now.y+1][position_now.x] != 1 && position_now != last_position && seed == 0) {
-            last_position = position_now;
-            path.push_back(position_now);
-            position_now += {0,1};
-        }
-        else if (FIELD[position_now.y][position_now.x+1] != 1 && position_now != last_position && seed == 1) {
-            last_position = position_now;
-            path.push_back(position_now);
-            position_now += {1,0};
-        }
-        else if (FIELD[position_now.y][position_now.x-1] != 1 && position_now != last_position && seed == 2) {
-            last_position = position_now;
-            path.push_back(position_now);
-            position_now -= {1,0};
-        }
-        else if (FIELD[position_now.y-1][position_now.x] != 1 && position_now != last_position&& seed == 3) {
-            last_position = position_now;
-            path.push_back(position_now);
-            position_now -= {0,1};
-        }
-    }
-    path.push_back(position_now);
-    return path;
-}
-
-std::vector<point> cleanPath(std::vector<point> &path){
-    std::vector<point> clean_path;
-    auto begin = clean_path.cbegin();
-
-    for(point pos: path)
-        if (!count(clean_path.begin(), clean_path.end(), pos))
-            clean_path.push_back(pos);
-
-
-    return clean_path;
-}
-
-std::vector<point> minRandomPath(std::vector<point> &path,int niterations = 10000){
-    std::vector<point> min_path = path;
-    for(int i = 0; i != niterations; i++){
-        std::vector<point> random_path = findRandomPath();
-        if (min_path.size() > random_path.size())
-            min_path = random_path;
-    }
-    return min_path;
-}
-
 void printPath(std::vector<point> &path){
     int x = 0;
     std::cout << "[ ";
@@ -157,21 +103,80 @@ void printPath(std::vector<point> &path){
     std::cout << x << std::endl;
 }
 
+std::vector<point> findRandomPath(point &start = START_POSITION,point &end = END_POSITION){
+    std::vector<point> path;
+    point position_now = start;
+    while (position_now != end)
+    {
+        int seed = std::rand()%4;
+        if (FIELD[position_now.y+1][position_now.x] != 1 && seed == 0) {
+            path.push_back(position_now);
+            position_now += {0,1};
+        }
+        else if (FIELD[position_now.y][position_now.x+1] != 1  && seed == 1) {
+            path.push_back(position_now);
+            position_now += {1,0};
+        }
+        else if (FIELD[position_now.y][position_now.x-1] != 1  && seed == 2) {
+            path.push_back(position_now);
+            position_now -= {1,0};
+        }
+        else if (FIELD[position_now.y-1][position_now.x] != 1 && seed == 3) {
+            path.push_back(position_now);
+            position_now -= {0,1};
+        }
+    }
+    path.push_back(position_now);
+    return path;
+}
+
+std::vector<point> cleanPath(std::vector<point> path){
+    std::vector<point> temp_path;
+    std::vector<point> clean_path;
+    std::vector<int> temp_position;
+    for (size_t i = 0;i != path.size();i++){
+        if (!count(temp_path.begin(), temp_path.end(), path[i])){
+            temp_path.push_back(path[i]);
+        } else {
+            temp_position.push_back(i);
+        }
+    }
+    temp_path.clear();
+    std::reverse(temp_position.begin(),temp_position.end());
+    for (int pos : temp_position){
+        auto begin = path.cbegin();
+        path.erase(begin+pos-1,begin+pos);
+    }
+    for (size_t i = 0;i != path.size();i++)
+        if (!count(clean_path.begin(), clean_path.end(), path[i]))
+            clean_path.push_back(path[i]);
+
+    return clean_path;
+}
+
+std::vector<point> minRandomPath(int niterations = 10000,point &start = START_POSITION,point &end = END_POSITION){
+    std::vector<point> min_path = findRandomPath(start,end);
+    for(int i = 0; i != niterations; i++){
+        std::vector<point> random_path = findRandomPath(start,end);
+        if (min_path.size() > random_path.size())
+            min_path = random_path;
+    }
+    return min_path;
+}
+
+std::vector<point> findPath(){
+    std::vector<point> min_path = minRandomPath();
+    std::vector<point> clean_path = cleanPath(min_path);
+    return clean_path;
+}
+
 int main(){
     generationField(FIELD);
-    // FIELD[2][2] = 1;
-    // FIELD[3][2] = 1;
+
     printField();
 
     std::srand(time(NULL));
 
-    std::vector<point> path = findRandomPath();
-    printPath(path);
-    std::vector<point> minpath = minRandomPath(path);
-    printPath(minpath);
-    std::vector<point> cleanpath = cleanPath(minpath);
-    printPath(cleanpath);
-    printField(cleanpath);
-    // int c = findPathLength({0,1},{0,0},counter);
+
     return 0;
 }
