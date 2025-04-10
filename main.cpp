@@ -4,11 +4,17 @@
 #include <ctime>
 #include <algorithm>
 #include <cmath>
+#include <thread>
+#include <random> 
+#include <mutex>
+#include<windows.h>
 
-constexpr int FIELD_WIDTH  = 5;
-constexpr int FIELD_HEIGHT = 5;
+constexpr int FIELD_WIDTH  = 11;
+constexpr int FIELD_HEIGHT = 11;
 
 int FIELD[FIELD_HEIGHT][FIELD_WIDTH];
+
+std::mutex mtx;
 
 class point
 {    
@@ -79,16 +85,35 @@ bool cheakPointInArr(point p,std::vector<point> &arr_p){
     return count(arr_p.begin(), arr_p.end(), p)>0;
 }
 
+int GetRandomInt(int start,int end,std::vector<int> bad_int = {}){
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(start, end);
+    int random_int = dis(gen);
+    int c = 0;
+    while (count(bad_int.begin(), bad_int.end(), random_int) > 0)
+    {
+        random_int = dis(gen);
+        c+=1;
+        if(c == 10) return -1;
+    }
+    return random_int;
+}
+
 void printField(){
+    std::cout << "\n";
     for (int x = 0; x != FIELD_WIDTH; x++){
         for (int y = 0; y != FIELD_HEIGHT; y++) {
             std::cout << FIELD[x][y];
         } 
         std::cout << "\n";
     }
+    std::cout << "\n";
+
 }
 
 void printField(std::vector<point> &path){
+    std::cout << "\n" << "\n";
     for (int x = 0; x != FIELD_WIDTH; x++){
         for (int y = 0; y != FIELD_HEIGHT; y++) {
             int str = FIELD[x][y];
@@ -100,53 +125,87 @@ void printField(std::vector<point> &path){
         } 
         std::cout << "\n";
     }
+    std::cout << "\n" << "\n";
+
 }
 
 void printPath(std::vector<point> &path){
-    int x = 0;
     std::cout << "[ ";
     for (auto pos:path){
-        x += 1;
         std::cout << "(" << pos.x << "," << pos.y << "),";
         }
     std::cout << " ]" << std::endl;
-    std::cout << x << std::endl;
+    std::cout << "path size: "<< path.size() << std::endl;
 }
 
 std::vector<point> findRandomPath(point &start = START_POSITION,point &end = END_POSITION){
     std::vector<point> path;
+    std::vector<point> temp_path;
     point position_now = start;
-    int c = 0;
+    int bad_iteration = 0;
     while (position_now != end)
-    {
-        int seed = std::rand()%4;
-
-        if (FIELD[position_now.y+1][position_now.x] != 1 && seed == 0 && !cheakPointInArr(position_now + point(0,1),path)) {
-            path.push_back(position_now);
-            position_now += {0,1};
-        }
-        else if (FIELD[position_now.y][position_now.x+1] != 1  && seed == 1 && !cheakPointInArr(position_now + point(1,0),path)) {
-            path.push_back(position_now);
-            position_now += {1,0};
-        }
-        else if (FIELD[position_now.y][position_now.x-1] != 1  && seed == 2 && !cheakPointInArr(position_now - point(1,0),path)) {
-            path.push_back(position_now);
-            position_now -= {1,0};
-        }
-        else if (FIELD[position_now.y-1][position_now.x] != 1 && seed == 3 && !cheakPointInArr(position_now - point(0,1),path)) {
-            path.push_back(position_now);
-            position_now -= {0,1};
-
-        }else{
-            c+=1;
-        }
-        if (c > FIELD_HEIGHT*FIELD_WIDTH){
+    {   
+        std::system("cls");
+        temp_path.push_back(position_now);
+        if (count(temp_path.begin(), temp_path.end(),point(2,1))>5 || count(temp_path.begin(), temp_path.end(),point(1,1))>5){
             path.clear();
             break;
         }
+            
+
+        int start_seed = 0;
+        int end_seed = 3;
+        std::vector<int> bad_int;
+        if (FIELD[position_now.y+1][position_now.x] == 1 || cheakPointInArr(position_now + point(0,1),path)) 
+            bad_int.push_back(0);
+        if (FIELD[position_now.y][position_now.x+1] == 1 || cheakPointInArr(position_now + point(1,0),path)) 
+            bad_int.push_back(1);
+        if (FIELD[position_now.y][position_now.x-1] == 1 || cheakPointInArr(position_now - point(1,0),path)) 
+            bad_int.push_back(2);
+        if (FIELD[position_now.y-1][position_now.x] == 1 || cheakPointInArr(position_now - point(0,1),path)) 
+            bad_int.push_back(3);
+
+        int seed = GetRandomInt(start_seed,end_seed,bad_int);
+        if (seed == -1){
+            position_now = start;
+            path.clear();
+            bad_int.clear();
+            continue;
+        }
+
+        if (seed == 0) {
+            path.push_back(position_now);
+            position_now += {0,1};
+            bad_iteration = 0;
+        }
+        else if (seed == 1) {
+            path.push_back(position_now);
+            position_now += {1,0};
+            bad_iteration = 0;
+        }
+        else if (seed == 2) {
+            path.push_back(position_now);
+            position_now -= {1,0};
+            bad_iteration = 0;
+        }
+        else if (seed == 3) {
+            path.push_back(position_now);
+            position_now -= {0,1};
+            bad_iteration = 0;
+        }
+        else bad_iteration+=1;
+        if (bad_iteration > FIELD_HEIGHT*FIELD_WIDTH){
+            path.clear();
+            bad_int.clear();
+            position_now = start;
+            
+            continue;
+        }
+        printField(path);
     }
-    if (path.size() > 0 )
+    if (path.size() > 0)
         path.push_back(position_now);
+
     return path;
 }
 
@@ -174,11 +233,32 @@ std::vector<point> cleanPath(std::vector<point> path){
     return clean_path;
 }
 
-std::vector<point> minRandomPath(long long niterations = FIELD_WIDTH*FIELD_HEIGHT*FIELD_WIDTH*FIELD_HEIGHT,point &start = START_POSITION,point &end = END_POSITION){
+std::vector<point> minRandomPath(int niterations = 1,point &start = START_POSITION,point &end = END_POSITION){
     std::vector<point> min_path = findRandomPath(start,end);
+
+    // auto functionFindRandomPath = [&min_path,&start,&end](){
+        while (min_path.size() == 0)
+        {
+            min_path = findRandomPath(start,end);
+        }
+    // };
+    
+    // std::thread ThreadFindRandomPath1(functionFindRandomPath);
+    // std::thread ThreadFindRandomPath2(functionFindRandomPath);
+    // std::thread ThreadFindRandomPath3(functionFindRandomPath);
+    // std::thread ThreadFindRandomPath4(functionFindRandomPath);
+    // std::thread ThreadFindRandomPath5(functionFindRandomPath);
+
+    // ThreadFindRandomPath1.join();
+    // ThreadFindRandomPath2.join();
+    // ThreadFindRandomPath3.join();
+    // ThreadFindRandomPath4.join();
+    // ThreadFindRandomPath5.join();
+
+
     for(int i = 0; i != niterations; i++){
         std::vector<point> random_path = findRandomPath(start,end);
-        if (min_path.size() > random_path.size())
+        if (min_path.size() > random_path.size() && random_path.size() != 0)
             min_path = random_path;
     }
     return min_path;
@@ -217,40 +297,46 @@ void baseGenerationField(std::vector<point> Maze = {}){
     }
 }
 
-void AllRandomGenerationField(int difficulty = 1)
-{
-    std::vector<point> temp_arr = {START_POSITION};
+
+void RandomGenerationField(){
     std::vector<point> Maze;
-    for(int y = 1; y != FIELD_HEIGHT;y++){
-        int n = std::rand()%difficulty + 1;
-        for(int i = 0; i!= n;i++){
-            int x = std::rand()%FIELD_WIDTH + 1;
-            point p = {x,y};
-            temp_arr.push_back(p);
+    for( int y = 0; y < FIELD_HEIGHT;y+=2){
+        for( int x = 0; x != FIELD_WIDTH;x++){
+            FIELD[y][x] = 1;
+        }
+        int nrandom = GetRandomInt(1,round(FIELD_WIDTH/2));
+        for( int n = 0; n != nrandom;n++){
+            int xrandom = GetRandomInt(1,FIELD_WIDTH-1);
+            FIELD[y][xrandom] = 0;
         }
     }
-    temp_arr.push_back(END_POSITION);
-    for(int i = 0; i != temp_arr.size()-1;i++){
-        std::vector<point> path = findPath(100,temp_arr[i],temp_arr[i+1]);
-        for (point pos :path){
-            Maze.push_back(pos);
-        }
-    }
+
+    for( int x = 0; x != FIELD_WIDTH;x++){
+        FIELD[START_POSITION.y][x] = 0;
+        FIELD[END_POSITION.y][x] = 0;
+
+    }   
     baseGenerationField(Maze);
 }
 
-
 int main(){
-    std::srand(time(NULL));
-
-    // AllRandomGenerationField(1);
-    baseGenerationField();
-    std::vector<point> path = findRandomPath();
+    RandomGenerationField();
+    // for(int i =0; i!=FIELD_WIDTH;i++)
+    //     FIELD[2][i] = 1;
+    printField();
+    int start = GetTickCount();
+    std::vector<point> path = minRandomPath(100);
+    int end=GetTickCount();
+    std::cout<<(end-start)/1000.0<<std::endl;
     printField(path);
+    
+    // AllRandomGenerationField(3);
+    // baseGenerationField();
+    // std::vector<point> path = minRandomPath(1000);
     // std::vector<point> path = findPath(100000);
     // std::cout << std::endl;
-    printPath(path);
-    // std::cout << path.size() << std::endl;
 
+    // std::cout << path.size() << std::endl;
+    // std::cout << std::thread::hardware_concurrency();
     return 0;
 }
