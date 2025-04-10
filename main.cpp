@@ -147,6 +147,7 @@ std::vector<point> findRandomPath(point &start = START_POSITION,point &end = END
     {   
         std::system("cls");
         temp_path.push_back(position_now);
+        std::cout << temp_path.size();
         if (count(temp_path.begin(), temp_path.end(),point(2,1))>5 || count(temp_path.begin(), temp_path.end(),point(1,1))>5){
             path.clear();
             break;
