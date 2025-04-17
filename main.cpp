@@ -10,7 +10,7 @@ int main(){
     RandomGenerationField();
     printField();
     int start = GetTickCount();
-    std::vector<point> path = minRandomPath(100);
+    std::vector<point> path = findPath(100);
     int end=GetTickCount();
     std::cout<<(end-start)/1000.0<<std::endl;
     printField(path);

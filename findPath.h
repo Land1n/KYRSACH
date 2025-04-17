@@ -9,9 +9,7 @@ std::vector<point> findRandomPath(point &start = START_POSITION,point &end = END
     int bad_iteration = 0;
     while (position_now != end)
     {   
-        std::system("cls");
         temp_path.push_back(position_now);
-        std::cout << temp_path.size();
         if (count(temp_path.begin(), temp_path.end(),point(2,1))>5 || count(temp_path.begin(), temp_path.end(),point(1,1))>5){
             path.clear();
             break;
@@ -35,6 +33,7 @@ std::vector<point> findRandomPath(point &start = START_POSITION,point &end = END
             position_now = start;
             path.clear();
             bad_int.clear();
+                
             continue;
         }
 
@@ -66,7 +65,14 @@ std::vector<point> findRandomPath(point &start = START_POSITION,point &end = END
             
             continue;
         }
-        printField(path);
+
+
+
+
+        if (DEBUG){
+            std::system("cls");
+            printField(path);
+        }
     }
     if (path.size() > 0)
         path.push_back(position_now);
@@ -130,9 +136,39 @@ std::vector<point> minRandomPath(int niterations = 1,point &start = START_POSITI
 }
 
 std::vector<point> findPath(int niterations = 10000, point &start = START_POSITION, point &end = END_POSITION){
-    std::vector<point> min_path = minRandomPath(niterations,start,end);
+    point new_start;
+    point new_end;
+    std::vector<point> path_before_new_start;
+    std::vector<point> path_before_new_end;
+    for (int x = start.x; x != FIELD_SIZE-1; x++)
+    {
+        point position_now = {x,start.y};
+        if (FIELD[start.y-1][x] == 1 && FIELD[start.y+1][x] == 1)
+            path_before_new_start.push_back(position_now);
+        else{
+            new_start = position_now;
+            break;
+        }
+    }
+    for (int x = end.x; x != 1; x--)
+    {
+        point position_now = {x,end.y};
+        if (FIELD[end.y-1][x] == 1 && FIELD[end.y+1][x] == 1)
+            path_before_new_end.push_back(position_now);
+        else{
+            new_end = position_now;
+            break;
+        }
+    }
+    for (int i = 0; i!=3;i++){
+        path_before_new_start.push_back(point(0,i) + new_start);
+        path_before_new_end.push_back(new_end - point(0,i));
+    }
+    new_start += {0,2};
+    new_end -= {0,2};
+    std::vector<point> min_path = minRandomPath(niterations,new_start,new_end);
     std::vector<point> clean_path = cleanPath(min_path);
-    if (clean_path.back() != end)
-        clean_path.clear();
-    return clean_path;
+    path_before_new_start.insert(path_before_new_start.end(),clean_path.begin(),clean_path.end());
+    path_before_new_start.insert(path_before_new_start.end(),path_before_new_end.begin(),path_before_new_end.end());
+    return path_before_new_start;
 }

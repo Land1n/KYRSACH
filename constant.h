@@ -2,6 +2,8 @@
 
 #include "point.h"
 
+constexpr bool DEBUG = false;
+
 constexpr int FIELD_SIZE  = 11;
 
 int FIELD[FIELD_SIZE][FIELD_SIZE];

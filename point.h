@@ -5,7 +5,7 @@ class point
 public: 
     int x;
     int y;
-    point(int x, int y ) :  x(x) , y(y){}
+    point(int x = 0 , int y = 0) :  x(x) , y(y){}
 
     bool operator == (const point &p) {
         return ( x == p.x &&  y == p.y) == true;
